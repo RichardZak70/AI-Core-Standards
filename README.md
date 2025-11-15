@@ -260,6 +260,7 @@ sonar.cfamily.compile-commands=compile_commands.json
 - **[Development Guide](docs/DEVELOPMENT.md)** - Detailed development workflow
 - **[Language Guides](docs/languages/)** - Language-specific best practices
 - **[AI Integration](docs/AI_INTEGRATION.md)** - AI tool setup and usage
+- **[AI Coding Prompts](docs/AI_CODING_PROMPTS.md)** - Structured AI development prompts (includes marcbln's proven patterns)
 - **[Quality Standards](docs/QUALITY.md)** - Code quality requirements
 - **[Security Guidelines](docs/SECURITY.md)** - Security best practices
 
