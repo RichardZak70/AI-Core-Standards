@@ -3,10 +3,12 @@
 This repo is currently being developed - as new projects that are being worked on are completed, any lessons, tools, etc learned will make their way to this
 repo.  This repo uses other public repo's information and AI to create these files and comments.  Where other people's work has been referenced, recognition of the author
 has been give.
+
 Current repo's that have been reviewed and referenced - 
+
     Marc Christenfeldt - marcbln - https://github.com/marcbln?tab=repositories
 
-> A comprehensive development workspace optimized for AI-assisted programming with integrated quality tools, testing frameworks, and automation.
+This repo is being developed to become a comprehensive development workspace optimized for AI-assisted programming with integrated quality tools, testing frameworks, and automation.
 
 [![CI/CD Pipeline](https://github.com/yourusername/ai-development-workspace/workflows/CI/CD%20Pipeline/badge.svg)](https://github.com/yourusername/ai-development-workspace/actions)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=ai-development-workspace&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=ai-development-workspace)
