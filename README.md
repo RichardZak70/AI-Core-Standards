@@ -1,4 +1,4 @@
-# RZ AI Core Standards
+# AI Core Standards
 
 This repository centralizes the conventions, templates, and tooling that govern AI-focused initiatives across the organization. Use it as the canonical rulebook for designing, building, and auditing AI projects of any size.
 
