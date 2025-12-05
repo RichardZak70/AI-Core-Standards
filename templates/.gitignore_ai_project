@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+.venv
+venv/
+.envrc
+
+# Node
+node_modules/
+
+# Data artifacts
+*.csv
+*.tsv
+*.parquet
+*.feather
+*.db
+*.sqlite
+*.log
+
+# Notebooks checkpoints
+.ipynb_checkpoints/
+
+# Model artifacts
+models/**/*.bin
+models/**/*.onnx
+checkpoints/
+
+# Local tooling
+.idea/
+.vscode/
+.DS_Store
+
+# Secrets
+secrets.*.json
+secrets/*.yaml

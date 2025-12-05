@@ -1,0 +1,13 @@
+DATA/
+├── raw/          <- immutable source drops (append-only)
+├── processed/    <- cleaned / normalized data, reproducible from raw
+├── prompts/      <- prompt experiments, AB tests, logs
+├── outputs/      <- model responses, evals, artifacts with timestamps
+├── cache/        <- cached LLM responses keyed by prompt+input+model hash
+└── embeddings/   <- vector stores, metadata, index shards
+
+Guidance:
+1. Raw data is never mutated; rerun pipelines to regenerate processed outputs.
+2. Every file under outputs/ includes timestamp, model, and prompt identifiers.
+3. Cache entries must be easily purgeable and should not contain sensitive data.
+4. Embeddings from different models or dimensions belong in separate subfolders.
