@@ -31,14 +31,14 @@ This document tracks the status of the RZ AI Core Standards repository.
 ## 4. Tooling and Scripts
 
 - [x] `scripts/audit_ai_project.py` – checks presence of required config/data/docs.
-- [ ] `scripts/migrate_prompts_from_code.py` – stub present; implementation pending.
-- [ ] Add tests for `audit_ai_project.py` in a sample project (optional).
+- [x] `scripts/migrate_prompts_from_code.py` – extracts inline prompts from Python into YAML.
+- [x] Add tests for `audit_ai_project.py` in a sample project (optional).
 
 ## 5. Linting and Quality
 
-- [ ] Configure markdownlint for this repo (config file + npm dependency).
-- [ ] Run markdownlint cleanly on all `.md` files.
-- [ ] Add a simple CI workflow to enforce markdownlint on pull requests.
+- [x] Configure markdownlint for this repo (config file + npm dependency).
+- [x] Run markdownlint cleanly on all `.md` files.
+- [x] Add a simple CI workflow to enforce markdownlint on pull requests.
 
 ---
 

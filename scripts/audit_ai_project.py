@@ -42,10 +42,10 @@ def audit(path: Path) -> int:
             print(f"  - {file_path}")
 
     if not missing_dirs and not missing_files:
-        print("✅ Project matches core AI structure.")
+        print("Project matches core AI structure.")
         return 0
 
-    print("\n❌ Project does NOT match core AI structure.")
+    print("\nProject does NOT match core AI structure.")
     print("Suggested fix: copy missing items from RZ-AI-Core-Standards/templates.")
     return 1
 

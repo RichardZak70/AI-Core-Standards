@@ -1,13 +1,16 @@
-DATA/
+data/
 ├── raw/          <- immutable source drops (append-only)
 ├── processed/    <- cleaned / normalized data, reproducible from raw
-├── prompts/      <- prompt experiments, AB tests, logs
-├── outputs/      <- model responses, evals, artifacts with timestamps
-├── cache/        <- cached LLM responses keyed by prompt+input+model hash
-└── embeddings/   <- vector stores, metadata, index shards
+├── prompts/      <- prompt experiments, A/B tests, prompt logs
+├── outputs/      <- model responses, evaluations, artifacts (timestamped)
+├── cache/        <- cached LLM responses keyed by (prompt + input + model) hash
+└── embeddings/   <- vector stores, metadata, indexes (versioned by model/dimension)
 
 Guidance:
-1. Raw data is never mutated; rerun pipelines to regenerate processed outputs.
-2. Every file under outputs/ includes timestamp, model, and prompt identifiers.
-3. Cache entries must be easily purgeable and should not contain sensitive data.
-4. Embeddings from different models or dimensions belong in separate subfolders.
+1. raw/ is never mutated; rerun pipelines to regenerate everything under processed/ and outputs/.
+2. Every file under outputs/ includes, at minimum: timestamp, model identifier, and prompt identifier(s).
+3. cache/ entries must be easily purgeable and must not contain sensitive data beyond what is already in raw/.
+4. embeddings/ from different models or dimensions belong in clearly separated subfolders
+	(e.g. embeddings/text-embedding-3-small/, embeddings/text-embedding-3-large/).
+5. If experiments need one-off structures, prefer data/experiments/ under the relevant project
+	rather than mixing experimental artifacts into raw/, processed/, or outputs/.
