@@ -99,7 +99,7 @@ KNOWN_TASKS: tuple[AuditTask, ...] = (
         key="docs",
         title="Docs & Standards",
         description="(Placeholder) Align README/docs with standards.",
-        command=None,
+        command=["python", "scripts/audit_docs.py"],
         path=Path("scripts/audit_docs.py"),
     ),
     AuditTask(
