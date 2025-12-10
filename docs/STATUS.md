@@ -63,3 +63,5 @@ npx markdownlint-cli "docs/**/*.md"
 - Add a short "Quickstart" guide that explains how to copy templates into a new project and run `scripts/audit_ai_project.py` for an initial compliance check.
 - Extend script coverage by documenting usage examples and adding lightweight tests for `migrate_prompts_from_code.py` and `validate_config.py` to keep automation in step with the standards.
 - Provide a minimal sample project skeleton (using the templates and schemas) to demonstrate end-to-end alignment with the standards and to serve as a baseline for future template work.
+- When additional audit scripts (e.g., `audit_llm_usage.py`, `audit_data_layout.py`, `audit_tooling.py`, `audit_docs.py`, `rz_ai_check.py`) are added, update `scripts/fix_audit_findings.py` and `tests/test_fix_audit_findings.py` to run and assert their presence in the sequence.
+- TODO: Finalize new audit stubs (`prompt_extract.py`, `prompt_merge.py`, `audit_llm_usage.py`, `audit_data_layout.py`, `audit_tooling.py`, `audit_docs.py`, `rz_ai_check.py`) and then wire their real logic into `scripts/fix_audit_findings.py` plus accompanying tests.
