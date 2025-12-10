@@ -1,5 +1,7 @@
+import importlib
 import sys
 from pathlib import Path
+from typing import cast
 
 import pytest
 
@@ -9,7 +11,11 @@ SCRIPTS_DIR = ROOT / "scripts"
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
-from audit_ai_project import audit, EXPECTED_DIRS, EXPECTED_FILES  # type: ignore[import-not-found]  # noqa: E402
+audit_mod = importlib.import_module("audit_ai_project")
+REQUIRED_DIRS = cast(list[str], getattr(audit_mod, "REQUIRED_DIRS"))
+REQUIRED_FILES = cast(list[str], getattr(audit_mod, "REQUIRED_FILES"))
+audit = getattr(audit_mod, "audit")
+print_human = getattr(audit_mod, "print_human")
 
 
 def _create_dirs(base: Path, dirs: list[str]) -> None:
@@ -25,13 +31,14 @@ def _create_files(base: Path, files: list[str]) -> None:
 
 
 def test_audit_passes_when_all_required_items_exist(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    _create_dirs(tmp_path, EXPECTED_DIRS)
-    _create_files(tmp_path, EXPECTED_FILES)
+    _create_dirs(tmp_path, REQUIRED_DIRS)
+    _create_files(tmp_path, REQUIRED_FILES)
 
-    exit_code = audit(tmp_path)
+    result = audit(tmp_path)
+    print_human(result)
     captured = capsys.readouterr().out
 
-    assert exit_code == 0
+    assert result.is_compliant is True
     assert "Project matches core AI structure." in captured
 
 
@@ -40,28 +47,30 @@ def test_audit_reports_missing_dirs_and_files(tmp_path: Path, capsys: pytest.Cap
     _create_dirs(tmp_path, ["config", "docs"])
     _create_files(tmp_path, [])
 
-    exit_code = audit(tmp_path)
+    result = audit(tmp_path)
+    print_human(result)
     captured = capsys.readouterr().out
 
-    assert exit_code == 1
-    assert "Missing directories:" in captured
-    for expected_dir in EXPECTED_DIRS:
+    assert result.is_compliant is False
+    assert "Missing required directories:" in captured
+    for expected_dir in REQUIRED_DIRS:
         # Only two directories were created; the rest should be reported as missing
         if expected_dir not in {"config", "docs"}:
             assert expected_dir in captured
-    assert "Missing files:" in captured
-    for expected_file in EXPECTED_FILES:
+    assert "Missing required files:" in captured
+    for expected_file in REQUIRED_FILES:
         assert expected_file in captured
 
 
 def test_audit_reports_missing_files_only(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     # All directories exist, but files are absent
-    _create_dirs(tmp_path, EXPECTED_DIRS)
+    _create_dirs(tmp_path, REQUIRED_DIRS)
 
-    exit_code = audit(tmp_path)
+    result = audit(tmp_path)
+    print_human(result)
     captured = capsys.readouterr().out
 
-    assert exit_code == 1
-    assert "Missing files:" in captured
-    for expected_file in EXPECTED_FILES:
+    assert result.is_compliant is False
+    assert "Missing required files:" in captured
+    for expected_file in REQUIRED_FILES:
         assert expected_file in captured

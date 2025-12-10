@@ -10,6 +10,10 @@ import yaml from 'js-yaml';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..');
 
+/**
+ * Files to validate.
+ * Add new entries here as your core standards grow.
+ */
 const files = [
   {
     label: 'models',
@@ -23,36 +27,82 @@ const files = [
   }
 ];
 
-const ajv = new Ajv2020({ strict: false, allErrors: true });
+/**
+ * Create a single Ajv instance for all validations.
+ * strict: 'log' will warn on schema issues without hard failing.
+ * Switch to strict: true once schemas are stable.
+ */
+const ajv = new Ajv2020({
+  strict: 'log',
+  allErrors: true,
+  allowUnionTypes: true
+});
 addFormats(ajv);
 
-let hasErrors = false;
-
-for (const { label, schema, data } of files) {
+async function validateConfig({ label, schema, data }) {
   const schemaPath = path.join(repoRoot, schema);
   const dataPath = path.join(repoRoot, data);
 
-  const schemaContent = await readFile(schemaPath, 'utf-8');
-  const schemaJson = JSON.parse(schemaContent);
-
-  const dataContent = await readFile(dataPath, 'utf-8');
-  const parsedData = yaml.load(dataContent) ?? {};
+  let schemaJson;
+  try {
+    const schemaContent = await readFile(schemaPath, 'utf-8');
+    schemaJson = JSON.parse(schemaContent);
+  } catch (err) {
+    console.error(`❌ Failed to load/parse schema for '${label}': ${schemaPath}`);
+    console.error(`   ${err instanceof Error ? err.message : String(err)}`);
+    throw err;
+  }
 
   const validate = ajv.compile(schemaJson);
+
+  let parsedData;
+  try {
+    const dataContent = await readFile(dataPath, 'utf-8');
+    parsedData = yaml.load(dataContent) ?? {};
+  } catch (err) {
+    console.error(`❌ Failed to load/parse data for '${label}': ${dataPath}`);
+    console.error(`   ${err instanceof Error ? err.message : String(err)}`);
+    throw err;
+  }
+
+  if (typeof parsedData !== 'object' || parsedData === null || Array.isArray(parsedData)) {
+    console.error(`❌ ${label} config root must be an object: ${dataPath}`);
+    return false;
+  }
+
   const valid = validate(parsedData);
 
   if (!valid) {
-    hasErrors = true;
     console.error(`❌ ${label} config failed schema validation: ${dataPath}`);
     for (const err of validate.errors ?? []) {
       const location = err.instancePath || '<root>';
-      console.error(`  - ${location}: ${err.message}`);
+      const message = err.message ?? 'validation error';
+      console.error(`  - ${location}: ${message}`);
     }
-  } else {
-    console.log(`✅ ${label} config matches ${schema}`);
+    return false;
+  }
+
+  console.log(`✅ ${label} config matches ${schema}`);
+  return true;
+}
+
+async function main() {
+  let hasErrors = false;
+
+  for (const fileDef of files) {
+    const ok = await validateConfig(fileDef);
+    if (!ok) {
+      hasErrors = true;
+    }
+  }
+
+  if (hasErrors) {
+    process.exit(1);
   }
 }
 
-if (hasErrors) {
-  process.exitCode = 1;
-}
+main().catch((err) => {
+  console.error('💥 Unexpected error during schema validation:');
+  console.error(err);
+  process.exit(1);
+});

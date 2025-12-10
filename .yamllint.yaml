@@ -6,6 +6,9 @@ yaml-files:
   - '*.yaml'
   - '*.yml'
 
+ignore: |
+  node_modules/**
+
 rules:
   line-length:
     max: 100
