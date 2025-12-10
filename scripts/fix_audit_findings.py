@@ -85,7 +85,7 @@ KNOWN_TASKS: tuple[AuditTask, ...] = (
         key="data-layout",
         title="Data Layout & Traceability",
         description="(Placeholder) Enforce data/ layout and metadata.",
-        command=None,
+        command=["python", "scripts/audit_data_layout.py"],
         path=Path("scripts/audit_data_layout.py"),
     ),
     AuditTask(

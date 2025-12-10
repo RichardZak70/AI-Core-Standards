@@ -14,6 +14,7 @@ if str(SCRIPTS_DIR) not in sys.path:
 audit_mod = importlib.import_module("audit_ai_project")
 REQUIRED_DIRS = cast(list[str], getattr(audit_mod, "REQUIRED_DIRS"))
 REQUIRED_FILES = cast(list[str], getattr(audit_mod, "REQUIRED_FILES"))
+RECOMMENDED_FILES = cast(list[str], getattr(audit_mod, "RECOMMENDED_FILES"))
 audit = getattr(audit_mod, "audit")
 print_human = getattr(audit_mod, "print_human")
 
@@ -31,6 +32,7 @@ def _create_files(base: Path, files: list[str]) -> None:
 
 
 def test_audit_passes_when_all_required_items_exist(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Project passes when required dirs/files exist; recommended may be missing."""
     _create_dirs(tmp_path, REQUIRED_DIRS)
     _create_files(tmp_path, REQUIRED_FILES)
 
@@ -39,6 +41,11 @@ def test_audit_passes_when_all_required_items_exist(tmp_path: Path, capsys: pyte
     captured = capsys.readouterr().out
 
     assert result.is_compliant is True
+    assert result.missing_dirs == []
+    assert result.missing_files == []
+    # Recommended items may be missing; allow empty or full list depending on fixture
+    assert result.missing_recommended == RECOMMENDED_FILES or result.missing_recommended == []
+    assert "Missing recommended items (not strictly required):" in captured
     assert "Project matches core AI structure." in captured
 
 
@@ -60,6 +67,10 @@ def test_audit_reports_missing_dirs_and_files(tmp_path: Path, capsys: pytest.Cap
     assert "Missing required files:" in captured
     for expected_file in REQUIRED_FILES:
         assert expected_file in captured
+    assert "Missing recommended items (not strictly required):" in captured
+    for rec in RECOMMENDED_FILES:
+        assert rec in captured
+    assert "Project does NOT match core AI structure." in captured
 
 
 def test_audit_reports_missing_files_only(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
@@ -71,6 +82,27 @@ def test_audit_reports_missing_files_only(tmp_path: Path, capsys: pytest.Capture
     captured = capsys.readouterr().out
 
     assert result.is_compliant is False
+    assert result.missing_dirs == []
     assert "Missing required files:" in captured
     for expected_file in REQUIRED_FILES:
         assert expected_file in captured
+    assert "Missing recommended items (not strictly required):" in captured
+    assert "Project does NOT match core AI structure." in captured
+
+
+def test_missing_recommended_only_does_not_break_compliance(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Recommended-only gaps should still be compliant but warn."""
+    _create_dirs(tmp_path, REQUIRED_DIRS)
+    _create_files(tmp_path, REQUIRED_FILES)
+
+    result = audit(tmp_path)
+    print_human(result)
+    captured = capsys.readouterr().out
+
+    assert result.is_compliant is True
+    # All recommended items should be listed as missing
+    assert result.missing_recommended == RECOMMENDED_FILES or result.missing_recommended == []
+    assert "Missing recommended items (not strictly required):" in captured
+    for rec in RECOMMENDED_FILES:
+        assert rec in captured
+    assert "Project matches core AI structure." in captured

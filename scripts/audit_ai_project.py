@@ -1,16 +1,9 @@
 #!/usr/bin/env python3
-"""
-Audit AI project structure against the RZ core standard.
-
-Usage:
-    python scripts/audit_ai_project.py              # audit current directory
-    python scripts/audit_ai_project.py /path/to/repo
-    python scripts/audit_ai_project.py --json
-    python scripts/audit_ai_project.py --validate-configs
-"""
+"""Audit AI project structure against the core standard."""
 
 from __future__ import annotations
 
+import argparse
 import json
 import subprocess
 import sys
@@ -59,6 +52,13 @@ class AuditResult:
     @property
     def is_compliant(self) -> bool:
         return not self.missing_dirs and not self.missing_files
+
+    def to_json(self) -> dict[str, object]:
+        payload: dict[str, object] = asdict(self)
+        payload["is_compliant"] = self.is_compliant and (
+            self.config_validation_passed in {True, None}
+        )
+        return payload
 
 
 def _find_missing(root: Path, expected: Iterable[str]) -> list[str]:
@@ -139,40 +139,40 @@ def print_human(result: AuditResult) -> None:
         print("Suggested fix: copy or adapt missing items from RZ-AI-Core-Standards/templates.")
 
 
+def parse_args(argv: list[str]) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Audit AI project structure against the core standard",
+    )
+    parser.add_argument("path", nargs="?", default=".", help="Path to the target project (default: current dir)")
+    parser.add_argument("--json", action="store_true", help="Emit JSON instead of human-readable output")
+    parser.add_argument(
+        "--validate-configs",
+        action="store_true",
+        help="Run scripts/ajv-validate.mjs after structure audit",
+    )
+    return parser.parse_args(argv[1:])
+
+
 def main(argv: list[str]) -> int:
-    json_mode = False
-    run_config_validate = False
-    target_arg: str | None = None
+    args = parse_args(argv)
 
-    for arg in argv[1:]:
-        if arg == "--json":
-            json_mode = True
-        elif arg == "--validate-configs":
-            run_config_validate = True
-        elif target_arg is None:
-            target_arg = arg
-        else:
-            print(f"Unexpected argument: {arg}", file=sys.stderr)
-            return 2
-
-    target = Path(target_arg).resolve() if target_arg else Path(".").resolve()
+    target = Path(args.path).resolve()
 
     result = audit(target)
 
-    if run_config_validate:
+    if args.validate_configs:
         result.config_validation_passed = _run_config_validation(target)
-        # If schema validation fails, treat as non-compliant
         if result.config_validation_passed is False:
             result.missing_files.append("(schema validation failed)")
 
-    if json_mode:
-        print(json.dumps(asdict(result), indent=2))
+    if args.json:
+        print(json.dumps(result.to_json(), indent=2))
     else:
         print_human(result)
 
     if not result.is_compliant:
         return 1
-    if run_config_validate and result.config_validation_passed is False:
+    if args.validate_configs and result.config_validation_passed is False:
         return 1
     return 0
 
