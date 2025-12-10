@@ -28,6 +28,8 @@ class ModelConfig(BaseModel):
 
 class ProviderConfig(BaseModel):
     default_model: str
+    coding_models: list[str] | None = None
+    general_models: list[str] | None = None
 
 
 class ModelsConfig(BaseModel):
@@ -36,8 +38,10 @@ class ModelsConfig(BaseModel):
 
 
 class PromptTemplate(BaseModel):
+    description: str | None = None
     system: str
     user_template: str
+    output_format: str | None = None
 
 
 class PromptsConfig(RootModel[Dict[str, PromptTemplate]]):

@@ -24,7 +24,17 @@
         "required": ["default_model"],
         "additionalProperties": false,
         "properties": {
-          "default_model": { "type": "string", "minLength": 1 }
+          "default_model": { "type": "string", "minLength": 1 },
+          "coding_models": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 },
+            "uniqueItems": true
+          },
+          "general_models": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 },
+            "uniqueItems": true
+          }
         }
       }
     }
