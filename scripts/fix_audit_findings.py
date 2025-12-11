@@ -70,8 +70,8 @@ KNOWN_TASKS: tuple[AuditTask, ...] = (
     AuditTask(
         key="prompt-merge",
         title="Prompt Merging",
-        description="(Placeholder) Merge core/template/custom prompts.",
-        command=None,
+        description="Merge core/template/custom prompts.",
+        command=["python", "scripts/prompt_merge.py"],
         path=Path("scripts/prompt_merge.py"),
     ),
     AuditTask(
