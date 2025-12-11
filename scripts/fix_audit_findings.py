@@ -63,9 +63,9 @@ KNOWN_TASKS: tuple[AuditTask, ...] = (
     AuditTask(
         key="prompt-extract",
         title="Prompt Extraction",
-        description="Extract inline prompts into config/prompts.yaml.",
-        command=["python", "scripts/migrate_prompts_from_code.py", "."],
-        path=Path("scripts/migrate_prompts_from_code.py"),
+        description="Extract inline prompts into a report (and optional YAML skeleton).",
+        command=["python", "scripts/prompt_extract.py"],
+        path=Path("scripts/prompt_extract.py"),
     ),
     AuditTask(
         key="prompt-merge",
