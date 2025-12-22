@@ -25,7 +25,8 @@ def test_pass_when_required_dirs_and_metadata(tmp_path: Path) -> None:
         "run_id": "r1",
         "model": "gpt-4",
         "prompt_id": "p1",
-        "timestamp": "2024-01-01T00:00:00Z"
+        "timestamp": "2024-01-01T00:00:00Z",
+        "status": "success"
         }""",
         encoding="utf-8",
     )
@@ -58,7 +59,7 @@ def test_missing_metadata_detected(tmp_path: Path) -> None:
 
     assert result.is_compliant is False
     assert result.metadata_issues
-    assert any("missing metadata keys" in issue for issue in result.metadata_issues)
+    assert any("schema validation failed" in issue for issue in result.metadata_issues)
 
 
 def test_stray_items_under_data_are_reported(tmp_path: Path) -> None:
@@ -109,6 +110,25 @@ def test_non_object_json_output_is_reported(tmp_path: Path) -> None:
 
     assert result.is_compliant is False
     assert any("expected top-level JSON object" in issue for issue in result.metadata_issues)
+
+
+def test_invalid_timestamp_fails_schema_validation(tmp_path: Path) -> None:
+    _make_dirs(tmp_path, REQUIRED_DIRS)
+    out_file = tmp_path / "data" / "outputs" / "bad_ts.json"
+    out_file.write_text(
+        """{
+        "run_id": "r1",
+        "model": "gpt-4",
+        "prompt_id": "p1",
+        "timestamp": "not-a-date"
+        }""",
+        encoding="utf-8",
+    )
+
+    result = audit(tmp_path)
+
+    assert result.is_compliant is False
+    assert any("schema validation failed" in issue for issue in result.metadata_issues)
 
 
 def test_max_output_files_limits_scan(tmp_path: Path) -> None:

@@ -11,7 +11,16 @@ from typing import Any, Dict, Iterable, Mapping, Tuple, Type, cast
 
 import yaml
 from jsonschema import Draft202012Validator
-from pydantic import BaseModel, ConfigDict, Field, PositiveInt, RootModel, ValidationError as PydanticValidationError
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    PositiveInt,
+    RootModel,
+    ValidationError as PydanticValidationError,
+    field_validator,
+    model_validator,
+)
 
 ModelType = Type[BaseModel]
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -22,6 +31,8 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 class ModelConfig(BaseModel):
+    """Validated model parameters for a specific provider/model pair."""
+
     model_config = ConfigDict(extra="forbid")
 
     provider: str
@@ -31,6 +42,8 @@ class ModelConfig(BaseModel):
 
 
 class ProviderConfig(BaseModel):
+    """Provider-level defaults and optional model allow-lists."""
+
     model_config = ConfigDict(extra="forbid")
 
     default_model: str
@@ -39,6 +52,8 @@ class ProviderConfig(BaseModel):
 
 
 class ModelsConfig(BaseModel):
+    """Top-level models.yaml structure."""
+
     model_config = ConfigDict(extra="forbid")
 
     default: ModelConfig
@@ -46,6 +61,8 @@ class ModelsConfig(BaseModel):
 
 
 class PromptTemplate(BaseModel):
+    """A single prompt template definition."""
+
     model_config = ConfigDict(extra="forbid")
 
     description: str | None = None
@@ -58,6 +75,115 @@ class PromptsConfig(RootModel[Dict[str, PromptTemplate]]):
     """Mapping of prompt IDs to their templates."""
 
 
+class DataPolicy(BaseModel):
+    """Data handling policy metadata for a project."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    pii: bool | None = None
+    prod_data: bool | None = None
+    data_classification: str | None = Field(None, pattern="^(public|internal|confidential|restricted)$")
+    retention_days: int | None = Field(None, ge=0)
+
+
+class RepositoryInfo(BaseModel):
+    """Repository metadata for the project config."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    url: str | None = None
+    branch: str = "main"
+
+
+class ProjectConfig(BaseModel):
+    """Top-level project.yaml structure."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(min_length=1)
+    description: str = Field(min_length=1)
+    owner: str | list[str] | None = None
+    languages: list[str] = Field(min_length=1)
+    runtime: str = Field(pattern="^(batch|service|cli|notebook|library|hybrid)$")
+    stack: list[str] | None = None
+    data_policy: DataPolicy | None = None
+    repository: RepositoryInfo | None = None
+    version: str | None = Field(None, pattern=r"^\d+\.\d+\.\d+(-[a-zA-Z0-9]+)?$")
+    status: str = Field("active", pattern="^(active|maintenance|deprecated|archived)$")
+
+
+class EvalDataset(BaseModel):
+    """Dataset locator and sampling options for an evaluation."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    dataset_id: str | None = Field(None, min_length=1)
+    data_path: str | None = Field(None, min_length=1)
+    split: str | None = Field(None, min_length=1)
+    max_samples: int | None = Field(None, ge=1)
+    seed: int | None = Field(None, ge=0)
+
+    @property
+    def has_source(self) -> bool:
+        """Return True if dataset_id or data_path is provided."""
+        return bool(self.dataset_id) or bool(self.data_path)
+
+
+class Evaluation(BaseModel):
+    """A single evaluation definition within evals.yaml."""
+
+    model_config = ConfigDict(extra="allow")
+
+    id: str = Field(min_length=1)
+    description: str = Field(min_length=1)
+    dataset: EvalDataset
+    prompt_id: str | list[str]
+    models: list[str]
+    metrics: list[str]
+    thresholds: Dict[str, float] | None = None
+    batch_size: int | None = Field(None, ge=1)
+    parallelism: int | None = Field(None, ge=1)
+    tags: list[str] | None = None
+
+    @field_validator("models", "metrics")
+    @classmethod
+    def ensure_non_empty_list(cls, value: list[str]) -> list[str]:
+        """Validate that list fields are non-empty."""
+        if not value:
+            raise ValueError("must contain at least one item")
+        return value
+
+    @field_validator("prompt_id")
+    @classmethod
+    def ensure_prompt_id(cls, value: str | list[str]) -> str | list[str]:
+        """Validate that prompt_id is a non-empty string or list of strings."""
+        if isinstance(value, str):
+            if not value:
+                raise ValueError("prompt_id cannot be empty")
+        else:
+            if not value:
+                raise ValueError("prompt_id list cannot be empty")
+            if any(not item for item in value):
+                raise ValueError("prompt_id entries must be non-empty strings")
+        return value
+
+    @model_validator(mode="after")
+    def ensure_dataset_source(self) -> "Evaluation":
+        """Validate that the dataset includes dataset_id or data_path."""
+        if not self.dataset.has_source:
+            raise ValueError("dataset must include dataset_id or data_path")
+        return self
+
+
+class EvalsConfig(BaseModel):
+    """Top-level evals.yaml structure."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    version: str | None = Field(None, min_length=1)
+    evals: list[Evaluation]
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -65,11 +191,11 @@ class PromptsConfig(RootModel[Dict[str, PromptTemplate]]):
 
 def read_file_text(path: Path) -> str:
     """Read text from *path* with helpful error messages."""
-
     return path.read_text(encoding="utf-8")
 
 
 def load_yaml(path: Path) -> Dict[str, Any]:
+    """Load YAML from *path* and normalize keys to strings."""
     data = yaml.safe_load(read_file_text(path))
     if data is None:
         return {}
@@ -83,10 +209,12 @@ def load_yaml(path: Path) -> Dict[str, Any]:
 
 
 def load_schema(path: Path) -> Dict[str, Any]:
+    """Load a JSON schema from *path*."""
     return cast(Dict[str, Any], json.loads(read_file_text(path)))
 
 
 def jsonschema_errors(schema: Mapping[str, Any], data: Mapping[str, Any]) -> Iterable[str]:
+    """Yield human-readable JSON Schema validation errors."""
     validator: Any = Draft202012Validator(schema)
     for error in validator.iter_errors(data):
         location = "/".join(str(part) for part in error.path) or "<root>"
@@ -95,6 +223,8 @@ def jsonschema_errors(schema: Mapping[str, Any], data: Mapping[str, Any]) -> Ite
 
 @dataclass
 class ValidationResult:
+    """Outcome of validating a single config document against schema and model."""
+
     label: str
     data_path: Path
     schema_path: Path
@@ -108,6 +238,7 @@ def validate_document(
     schema_path: Path,
     model_class: ModelType,
 ) -> ValidationResult:
+    """Validate one YAML config against both JSON Schema and a Pydantic model."""
     errors: list[str] = []
     try:
         data = load_yaml(data_path)
@@ -136,8 +267,10 @@ def validate_document(
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse CLI arguments for validating template configs."""
     parser = argparse.ArgumentParser(
-        description="Validate template configs against JSON Schema and Pydantic models"
+        prog="validate_config",
+        description="Validate template configs against JSON Schema and Pydantic models",
     )
     parser.add_argument(
         "--models",
@@ -164,6 +297,30 @@ def parse_args() -> argparse.Namespace:
         help="Path to prompts JSON schema (default: repo_root/schemas/prompts.schema.json)",
     )
     parser.add_argument(
+        "--project",
+        type=Path,
+        default=None,
+        help="Path to project.yaml (default: repo_root/templates/config/project.yaml)",
+    )
+    parser.add_argument(
+        "--project-schema",
+        type=Path,
+        default=None,
+        help="Path to project JSON schema (default: repo_root/schemas/project_config.schema.json)",
+    )
+    parser.add_argument(
+        "--evals",
+        type=Path,
+        default=None,
+        help="Path to evals.yaml (default: repo_root/templates/config/evals.yaml)",
+    )
+    parser.add_argument(
+        "--evals-schema",
+        type=Path,
+        default=None,
+        help="Path to evals JSON schema (default: repo_root/schemas/eval_config.schema.json)",
+    )
+    parser.add_argument(
         "--json",
         action="store_true",
         help="Emit JSON report instead of human-readable output",
@@ -171,43 +328,66 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def main() -> None:  # noqa: C901
-    args = parse_args()
+def _resolve_paths(args: argparse.Namespace) -> Tuple[Path, Path, Path, Path, Path, Path, Path, Path]:
     models_path = (args.models or (REPO_ROOT / "templates/config/models.yaml")).resolve()
     models_schema = (args.models_schema or (REPO_ROOT / "schemas/models.schema.json")).resolve()
     prompts_path = (args.prompts or (REPO_ROOT / "templates/config/prompts.yaml")).resolve()
     prompts_schema = (args.prompts_schema or (REPO_ROOT / "schemas/prompts.schema.json")).resolve()
+    project_path = (args.project or (REPO_ROOT / "templates/config/project.yaml")).resolve()
+    project_schema = (args.project_schema or (REPO_ROOT / "schemas/project_config.schema.json")).resolve()
+    evals_path = (args.evals or (REPO_ROOT / "templates/config/evals.yaml")).resolve()
+    evals_schema = (args.evals_schema or (REPO_ROOT / "schemas/eval_config.schema.json")).resolve()
+    return models_path, models_schema, prompts_path, prompts_schema, project_path, project_schema, evals_path, evals_schema
+
+
+def _render_json(results: list[ValidationResult]) -> None:
+    payload: dict[str, Any] = {
+        "results": [
+            {
+                "label": res.label,
+                "data_path": str(res.data_path),
+                "schema_path": str(res.schema_path),
+                "ok": res.ok,
+                "errors": res.errors,
+            }
+            for res in results
+        ],
+        "ok": all(res.ok for res in results),
+    }
+    print(json.dumps(payload, indent=2))
+
+
+def _render_human(results: list[ValidationResult]) -> None:
+    for res in results:
+        if res.ok:
+            print(f"✅ {res.label} config valid: {res.data_path}")
+        else:
+            print(f"❌ {res.label} invalid: {res.data_path}")
+            for issue in res.errors:
+                print(f"  - {issue}")
+
+
+def main() -> None:
+    """Validate all template configs and exit non-zero if any fail."""
+    args = parse_args()
+    models_path, models_schema, prompts_path, prompts_schema, project_path, project_schema, evals_path, evals_schema = _resolve_paths(args)
 
     validations: Tuple[Tuple[str, Path, Path, ModelType], ...] = (
         ("models", models_path, models_schema, ModelsConfig),
         ("prompts", prompts_path, prompts_schema, PromptsConfig),
+        ("project", project_path, project_schema, ProjectConfig),
+        ("evals", evals_path, evals_schema, EvalsConfig),
     )
 
-    results = [validate_document(label, data_path, schema_path, model_class) for label, data_path, schema_path, model_class in validations]
+    results = [
+        validate_document(label, data_path, schema_path, model_class)
+        for label, data_path, schema_path, model_class in validations
+    ]
 
     if args.json:
-        payload = {
-            "results": [
-                {
-                    "label": res.label,
-                    "data_path": str(res.data_path),
-                    "schema_path": str(res.schema_path),
-                    "ok": res.ok,
-                    "errors": res.errors,
-                }
-                for res in results
-            ],
-            "ok": all(res.ok for res in results),
-        }
-        print(json.dumps(payload, indent=2))
+        _render_json(results)
     else:
-        for res in results:
-            if res.ok:
-                print(f"✅ {res.label} config valid: {res.data_path}")
-            else:
-                print(f"❌ {res.label} invalid: {res.data_path}")
-                for issue in res.errors:
-                    print(f"  - {issue}")
+        _render_human(results)
 
     if not all(res.ok for res in results):
         raise SystemExit(1)

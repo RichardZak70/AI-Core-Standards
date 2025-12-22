@@ -37,25 +37,32 @@ RAW_LLM_PATTERNS: list[tuple[str, str]] = [
 
 @dataclass
 class Finding:
+    """A single suspected raw LLM provider usage finding."""
+
     path: str
     line: int
     message: str
     snippet: str | None = None
 
     def to_json(self) -> dict[str, object]:
+        """Return a JSON-serializable representation of this finding."""
         return asdict(self)
 
 
 @dataclass
 class LlmAuditResult:
+    """Result of scanning a repo for raw provider-specific LLM calls."""
+
     target: str
     findings: list[Finding]
 
     @property
     def is_compliant(self) -> bool:
+        """Return True if no findings were detected."""
         return not self.findings
 
     def to_json(self) -> dict[str, object]:
+        """Return a JSON-serializable representation of this result."""
         return {
             "target": self.target,
             "findings": [f.to_json() for f in self.findings],
@@ -116,6 +123,7 @@ def _scan_file(
 
 
 def audit(target_root: Path, max_size_bytes: int | None = 1_000_000) -> LlmAuditResult:
+    """Scan *target_root* for simple indicators of raw LLM provider usage."""
     findings: list[Finding] = []
     for file_path in _iter_code_files(target_root):
         findings.extend(_scan_file(file_path, RAW_LLM_PATTERNS, max_size_bytes=max_size_bytes))
@@ -123,6 +131,7 @@ def audit(target_root: Path, max_size_bytes: int | None = 1_000_000) -> LlmAudit
 
 
 def print_human(result: LlmAuditResult) -> None:
+    """Print a human-readable summary of findings."""
     print(f"Auditing LLM usage in: {result.target}\n")
 
     if not result.findings:
@@ -135,7 +144,11 @@ def print_human(result: LlmAuditResult) -> None:
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Audit LLM usage for standardized client and prompt handling.")
+    """Parse CLI arguments for the LLM usage audit."""
+    parser = argparse.ArgumentParser(
+        prog="audit_llm_usage",
+        description="Audit LLM usage for standardized client and prompt handling.",
+    )
     parser.add_argument("--target-root", type=Path, default=Path("."), help="Path to target repo root")
     parser.add_argument("--json", action="store_true", help="Emit JSON instead of human-readable output")
     parser.add_argument("--report", type=Path, help="Where to write the audit report (JSON)")
@@ -149,6 +162,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """CLI entry point. Returns a process exit code."""
     args = parse_args(argv)
     target_root = args.target_root.resolve()
 

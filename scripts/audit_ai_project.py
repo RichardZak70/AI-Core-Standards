@@ -43,6 +43,8 @@ RECOMMENDED_FILES: List[str] = [
 
 @dataclass
 class AuditResult:
+    """Result of auditing a repo against the AI project structure standard."""
+
     target: str
     missing_dirs: list[str]
     missing_files: list[str]
@@ -51,9 +53,11 @@ class AuditResult:
 
     @property
     def is_compliant(self) -> bool:
+        """Return True if required directories/files exist."""
         return not self.missing_dirs and not self.missing_files
 
     def to_json(self) -> dict[str, object]:
+        """Return a JSON-serializable representation of this result."""
         payload: dict[str, object] = asdict(self)
         payload["is_compliant"] = self.is_compliant and (
             self.config_validation_passed in {True, None}
@@ -62,6 +66,7 @@ class AuditResult:
 
 
 def _find_missing(root: Path, expected: Iterable[str]) -> list[str]:
+    """Return any expected paths that do not exist under *root*."""
     missing: list[str] = []
     for rel_path in expected:
         if not (root / rel_path).exists():
@@ -70,6 +75,7 @@ def _find_missing(root: Path, expected: Iterable[str]) -> list[str]:
 
 
 def audit(path: Path) -> AuditResult:
+    """Audit *path* for required and recommended AI project structure items."""
     missing_dirs = _find_missing(path, REQUIRED_DIRS)
     missing_files = _find_missing(path, REQUIRED_FILES)
     missing_recommended = _find_missing(path, RECOMMENDED_FILES)
@@ -84,7 +90,6 @@ def audit(path: Path) -> AuditResult:
 
 def _run_config_validation(root: Path) -> bool:
     """Invoke the AJV validation script; returns True on success."""
-
     script_path = root / "scripts" / "ajv-validate.mjs"
     if not script_path.exists():
         print("⚠️  Config validation skipped (scripts/ajv-validate.mjs not found).")
@@ -107,6 +112,7 @@ def _run_config_validation(root: Path) -> bool:
 
 
 def _print_block(title: str, items: Iterable[str]) -> bool:
+    """Print a titled list block; return True if anything was printed."""
     items = list(items)
     if not items:
         return False
@@ -117,6 +123,7 @@ def _print_block(title: str, items: Iterable[str]) -> bool:
 
 
 def print_human(result: AuditResult) -> None:
+    """Print a human-readable audit report."""
     print(f"Auditing AI structure in: {result.target}\n")
 
     printed_any = _print_block("Missing required directories:", result.missing_dirs)
@@ -140,6 +147,7 @@ def print_human(result: AuditResult) -> None:
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
+    """Parse CLI arguments for the audit command."""
     parser = argparse.ArgumentParser(
         description="Audit AI project structure against the core standard",
     )
@@ -154,6 +162,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 
 
 def main(argv: list[str]) -> int:
+    """CLI entry point. Returns a process exit code."""
     args = parse_args(argv)
 
     target = Path(args.path).resolve()

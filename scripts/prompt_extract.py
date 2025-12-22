@@ -32,26 +32,33 @@ IGNORE_DIRS: set[str] = {
 
 @dataclass
 class PromptFinding:
+    """A single extracted prompt occurrence from source code."""
+
     path: str  # path relative to target root
     line: int  # line number of the assignment
     var_name: str
     value: str
 
     def to_json(self) -> dict[str, object]:
+        """Return a JSON-serializable representation of this finding."""
         return asdict(self)
 
 
 @dataclass
 class PromptExtractionResult:
+    """Structured report of prompt findings for a target repository."""
+
     target: str
     prompts: list[PromptFinding]
 
     @property
     def is_compliant(self) -> bool:
+        """Extraction is informational; always returns True."""
         # Extraction is informational; always compliant.
         return True
 
     def to_json(self) -> dict[str, object]:
+        """Return a JSON-serializable representation of this report."""
         return {
             "target": self.target,
             "prompts": [p.to_json() for p in self.prompts],
@@ -147,6 +154,7 @@ def extract_prompts(
     extensions: Sequence[str] = (".py",),
     min_length: int = 40,
 ) -> PromptExtractionResult:
+    """Extract likely prompt variables from code under *target_root*."""
     findings: list[PromptFinding] = []
     for file_path in _iter_code_files(target_root, extensions):
         try:
@@ -168,6 +176,7 @@ def extract_prompts(
 
 
 def print_human(result: PromptExtractionResult) -> None:
+    """Print a human-readable prompt extraction summary."""
     print(f"Extracting prompts from: {result.target}\n")
     if not result.prompts:
         print("No inline prompts found.")
@@ -182,7 +191,8 @@ def print_human(result: PromptExtractionResult) -> None:
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Extract inline prompts into a report.")
+    """Parse CLI arguments for prompt extraction."""
+    parser = argparse.ArgumentParser(prog="prompt_extract", description="Extract inline prompts into a report.")
     parser.add_argument("--target-root", type=Path, default=Path("."), help="Path to target repo root")
     parser.add_argument("--json", action="store_true", help="Emit JSON instead of human-readable output")
     parser.add_argument("--yaml", action="store_true", help="Emit prompts.yaml skeleton to stdout")
@@ -198,6 +208,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """CLI entry point. Returns a process exit code."""
     args = parse_args(argv)
     target_root = args.target_root.resolve()
     exts = tuple(ext.strip() for ext in args.extensions.split(",") if ext.strip())

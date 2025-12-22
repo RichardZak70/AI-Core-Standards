@@ -17,6 +17,8 @@ from typing import Iterable, List, Sequence
 
 @dataclass(frozen=True)
 class AuditTask:
+    """A runnable (or placeholder) remediation task for an audit category."""
+
     key: str
     title: str
     description: str
@@ -26,6 +28,8 @@ class AuditTask:
 
 @dataclass
 class TaskResult:
+    """Outcome of executing a single remediation task."""
+
     task: AuditTask
     status: str  # ok | fail | missing | skipped
     exit_code: int | None
@@ -34,14 +38,17 @@ class TaskResult:
 
     @property
     def is_success(self) -> bool:
+        """Return True if the task ran and succeeded."""
         return self.status == "ok"
 
     @property
     def is_missing(self) -> bool:
+        """Return True if the task's script/command is not available."""
         return self.status == "missing"
 
     @property
     def is_failure(self) -> bool:
+        """Return True if the task ran and failed."""
         return self.status == "fail"
 
 
@@ -167,6 +174,7 @@ def resolve_tasks(standards_root: Path) -> list[AuditTask]:
 
 
 def run_task(task: AuditTask, *, cwd: Path, dry_run: bool = False) -> TaskResult:
+    """Run a single task command, capturing output and exit code."""
     if task.command is None or (task.path is not None and not task.path.exists()):
         return TaskResult(task=task, status="missing", exit_code=None, stdout="", stderr="")
 
@@ -179,6 +187,7 @@ def run_task(task: AuditTask, *, cwd: Path, dry_run: bool = False) -> TaskResult
 
 
 def filter_tasks(tasks: Iterable[AuditTask], only: Sequence[str] | None) -> list[AuditTask]:
+    """Filter tasks by comma-separated keys (or return all if not provided)."""
     if not only:
         return list(tasks)
     only_set = set(only)
@@ -186,6 +195,7 @@ def filter_tasks(tasks: Iterable[AuditTask], only: Sequence[str] | None) -> list
 
 
 def summarize(results: list[TaskResult]) -> str:
+    """Return a compact markdown table summarizing task results."""
     lines = ["Task Key | Status | Exit | Notes", "--------|--------|------|------"]
     for result in results:
         note = ""
@@ -200,6 +210,7 @@ def summarize(results: list[TaskResult]) -> str:
 
 
 def write_plan(path: Path, results: list[TaskResult]) -> None:
+    """Write a markdown remediation plan capturing outputs/errors per task."""
     lines: list[str] = ["# Audit Remediation Plan", ""]
     for res in results:
         lines.append(f"## {res.task.title} ({res.task.key})")
@@ -224,10 +235,12 @@ def run_sequence(
     target_root: Path,
     dry_run: bool,
 ) -> list[TaskResult]:
+    """Run the selected tasks sequentially and return results."""
     return [run_task(task, cwd=target_root, dry_run=dry_run) for task in tasks]
 
 
 def _build_parser() -> argparse.ArgumentParser:
+    """Build the CLI argument parser."""
     parser = argparse.ArgumentParser(description="Run or list AI Core Standards audit remediation tasks.")
     parser.add_argument("--list", action="store_true", help="List tasks and exit")
     parser.add_argument("--run", action="store_true", help="Run tasks (default: list only)")
@@ -245,6 +258,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
 
 def _determine_roots(args: argparse.Namespace) -> tuple[Path, Path, Path]:
+    """Resolve repo/standards/target roots based on CLI args."""
     repo_root = Path(__file__).resolve().parents[1]
     standards_root = args.standards_root.resolve() if args.standards_root else repo_root
     target_root = args.target_root.resolve() if args.target_root else repo_root
@@ -252,6 +266,7 @@ def _determine_roots(args: argparse.Namespace) -> tuple[Path, Path, Path]:
 
 
 def _maybe_list_tasks(selected: list[AuditTask], args: argparse.Namespace) -> int | None:
+    """Handle --guide/--list modes and return an exit code when applicable."""
     if args.guide:
         print(WORKFLOW_GUIDE)
         return 0
@@ -303,6 +318,7 @@ def _exit_code(results: list[TaskResult], *, fail_on_missing: bool) -> int:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    """CLI entry point. Returns a process exit code."""
     parser = _build_parser()
     args = parser.parse_args(argv)
     _, standards_root, target_root = _determine_roots(args)

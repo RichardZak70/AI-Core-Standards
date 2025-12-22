@@ -1,0 +1,12 @@
+# Dev/CI dependencies for linting, tests, and documentation gates.
+# Pinned for deterministic CI.
+
+-r requirements.txt
+
+darglint==1.8.1
+interrogate==1.7.0
+mypy==1.19.0
+pre-commit==4.5.1
+pytest==9.0.1
+ruff==0.14.8
+yamllint==1.37.1

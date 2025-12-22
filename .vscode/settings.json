@@ -1,0 +1,20 @@
+{
+    "sonarlint.connectedMode.project": {
+        "connectionId": "richardzak70",
+        "projectKey": "RichardZak70_AI-Core-Standards"
+    },
+
+    // Keep Problems focused on this repo, not the local Python install.
+    "python.analysis.diagnosticMode": "openFilesOnly",
+    "python.analysis.exclude": [
+        "**/.venv/**",
+        "**/venv/**",
+        "**/node_modules/**"
+    ],
+
+    // SonarLint: exclude virtual envs and dependencies from analysis.
+    // (SonarLint for VS Code honors sonar.exclusions in connected mode.)
+    "sonarlint.analyzerProperties": {
+        "sonar.exclusions": "**/.venv/**,**/venv/**,**/node_modules/**,**/__pycache__/**,**/.vscode/**,**/site-packages/**,**/typeshed-fallback/**,**/extensions/**"
+    }
+}

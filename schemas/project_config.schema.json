@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Project Configuration",
+  "type": "object",
+  "required": ["name", "description", "owner", "languages", "runtime"],
+  "properties": {
+    "name": { "type": "string" },
+    "description": { "type": "string" },
+    "owner": {
+      "oneOf": [
+        { "type": "string" },
+        { "type": "array", "items": { "type": "string" } }
+      ]
+    },
+    "team": {
+      "oneOf": [
+        { "type": "string" },
+        { "type": "array", "items": { "type": "string" } }
+      ]
+    },
+    "languages": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "runtime": {
+      "type": "string",
+      "enum": ["batch", "service", "cli", "notebook"]
+    },
+    "stack": { "type": "string" },
+    "data_policy": {
+      "type": "object",
+      "properties": {
+        "pii": { "type": "boolean" },
+        "prod_data": { "type": "boolean" },
+        "retention_days": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

@@ -10,12 +10,15 @@
   "scripts": {
     "lint:md": "markdownlint \"docs/**/*.md\" \"README.md\"",
     "lint:md:fix": "markdownlint --fix \"docs/**/*.md\" \"README.md\"",
+    "lint:js": "eslint \"scripts/**/*.mjs\"",
     "validate:schema": "node scripts/ajv-validate.mjs",
     "validate:all": "npm run lint:md && npm run validate:schema"
   },
   "devDependencies": {
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
+    "eslint": "^9.0.0",
+    "eslint-plugin-jsdoc": "^50.0.0",
     "js-yaml": "^4.1.0",
     "markdownlint-cli": "^0.46.0"
   }

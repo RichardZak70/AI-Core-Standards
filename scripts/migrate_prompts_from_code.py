@@ -34,7 +34,26 @@ def looks_like_prompt_var(name: str) -> bool:
     return bool(PROMPT_VAR_PATTERN.search(name))
 
 
-def extract_prompts_from_source(source: str) -> List[Tuple[str, str]]:  # noqa: C901
+def _prompts_from_assign(node: ast.Assign) -> list[Tuple[str, str]]:
+    results: list[Tuple[str, str]] = []
+    for target in node.targets:
+        if isinstance(target, ast.Name) and looks_like_prompt_var(target.id):
+            value = _extract_string(node.value)
+            if value:
+                results.append((target.id, value))
+    return results
+
+
+def _prompts_from_annassign(node: ast.AnnAssign) -> list[Tuple[str, str]]:
+    if not (isinstance(node.target, ast.Name) and node.value):
+        return []
+    if not looks_like_prompt_var(node.target.id):
+        return []
+    value = _extract_string(node.value)
+    return [(node.target.id, value)] if value else []
+
+
+def extract_prompts_from_source(source: str) -> List[Tuple[str, str]]:
     """Parse *source* and return list of (variable_name, string_value) tuples."""
     prompts: List[Tuple[str, str]] = []
     try:
@@ -43,19 +62,10 @@ def extract_prompts_from_source(source: str) -> List[Tuple[str, str]]:  # noqa: 
         return prompts
 
     for node in ast.walk(tree):
-        # Simple assignment: VAR = "..."
         if isinstance(node, ast.Assign):
-            for target in node.targets:
-                if isinstance(target, ast.Name) and looks_like_prompt_var(target.id):
-                    value = _extract_string(node.value)
-                    if value:
-                        prompts.append((target.id, value))
-        # Annotated assignment: VAR: str = "..."
-        elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
-            if looks_like_prompt_var(node.target.id) and node.value:
-                value = _extract_string(node.value)
-                if value:
-                    prompts.append((node.target.id, value))
+            prompts.extend(_prompts_from_assign(node))
+        elif isinstance(node, ast.AnnAssign):
+            prompts.extend(_prompts_from_annassign(node))
     return prompts
 
 
@@ -120,7 +130,9 @@ def write_yaml(data: Dict[str, Any], dest: Path) -> None:
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse CLI arguments for prompt migration."""
     parser = argparse.ArgumentParser(
+        prog="migrate_prompts_from_code",
         description="Extract inline prompts from Python code into a YAML config."
     )
     parser.add_argument(
@@ -144,6 +156,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
+    """Scan a project for inline prompts and write a prompts YAML file."""
     args = parse_args()
     root = args.project.resolve()
 

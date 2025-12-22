@@ -7,5 +7,5 @@ Before calling any project "production-ready," confirm:
 - [ ] There is a clear schema for all structured LLM outputs.
 - [ ] LLM calls are wrapped (no raw scattered API calls).
 - [ ] Linting and tests run in CI.
-- [ ] Prompts used in production are clearly identified and versioned.
+- [ ] Prompts used in production are explicitly identified and versioned.
 - [ ] There is a README explaining the LLM usage and data flow.

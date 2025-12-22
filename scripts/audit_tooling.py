@@ -59,6 +59,8 @@ LANGUAGE_REQUIRED_ALT_GROUPS: dict[str, List[set[str]]] = {
 
 @dataclass
 class ToolingAuditResult:
+    """Result of checking a repo for required tooling and CI configuration."""
+
     target: str
     missing_required: list[str]
     missing_recommended: list[str]
@@ -66,15 +68,18 @@ class ToolingAuditResult:
 
     @property
     def is_compliant(self) -> bool:
+        """Return True if required tooling items are present."""
         return not self.missing_required
 
     def to_json(self) -> dict[str, object]:
+        """Return a JSON-serializable representation of this result."""
         payload = asdict(self)
         payload["is_compliant"] = self.is_compliant
         return payload
 
 
 def _find_missing(root: Path, expected: Iterable[str]) -> list[str]:
+    """Return any expected files that do not exist under *root*."""
     missing: list[str] = []
     for rel in expected:
         if not (root / rel).exists():
@@ -83,6 +88,7 @@ def _find_missing(root: Path, expected: Iterable[str]) -> list[str]:
 
 
 def _find_missing_dirs(root: Path, expected_dirs: Iterable[str]) -> list[str]:
+    """Return any expected directories that do not exist under *root*."""
     missing: list[str] = []
     for rel in expected_dirs:
         path = root / rel
@@ -92,6 +98,7 @@ def _find_missing_dirs(root: Path, expected_dirs: Iterable[str]) -> list[str]:
 
 
 def _has_ci_workflow(root: Path) -> bool:
+    """Return True if any workflow YAML exists under .github/workflows/."""
     workflows_dir = root / ".github" / "workflows"
     if not workflows_dir.exists():
         return False
@@ -102,6 +109,7 @@ def _has_ci_workflow(root: Path) -> bool:
 
 
 def _detect_languages(root: Path, max_files: int = 2000) -> set[str]:
+    """Heuristically detect repo languages by scanning source file extensions."""
     exts_to_lang = {
         ".py": "python",
         ".ts": "typescript",
@@ -132,6 +140,7 @@ def _detect_languages(root: Path, max_files: int = 2000) -> set[str]:
 
 
 def _check_language_requirements(root: Path, langs: set[str]) -> tuple[list[str], dict[str, list[str]]]:
+    """Compute missing required files per detected language."""
     missing_required: list[str] = []
     missing_by_lang: dict[str, list[str]] = {}
 
@@ -153,6 +162,7 @@ def _check_language_requirements(root: Path, langs: set[str]) -> tuple[list[str]
 
 
 def _check_language_recommended(root: Path, langs: set[str]) -> dict[str, list[str]]:
+    """Compute missing recommended files per detected language."""
     missing_by_lang: dict[str, list[str]] = {}
     for lang in langs:
         rec = LANGUAGE_RECOMMENDED.get(lang, [])
@@ -165,6 +175,7 @@ def _check_language_recommended(root: Path, langs: set[str]) -> dict[str, list[s
 
 
 def _normalize_missing_recommended(missing_recommended: list[str]) -> list[str]:
+    """Normalize equivalent recommended groups (e.g., ruff.toml OR .ruff.toml)."""
     missing = set(missing_recommended)
 
     # Ruff config group: ruff.toml OR .ruff.toml counts as present if either exists
@@ -177,6 +188,7 @@ def _normalize_missing_recommended(missing_recommended: list[str]) -> list[str]:
 
 
 def audit(target_root: Path) -> ToolingAuditResult:
+    """Audit *target_root* for minimal, language-appropriate tooling files."""
     missing_required = _find_missing(target_root, REQUIRED_FILES)
 
     # CI: any workflow YAML satisfies the sentinel requirement
@@ -216,6 +228,7 @@ def audit(target_root: Path) -> ToolingAuditResult:
 
 
 def print_human(result: ToolingAuditResult) -> None:
+    """Print a human-readable tooling audit report."""
     print(f"Auditing tooling in: {result.target}\n")
 
     if result.missing_required:
@@ -243,7 +256,8 @@ def print_human(result: ToolingAuditResult) -> None:
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Audit tooling and CI presence.")
+    """Parse CLI arguments for the tooling audit."""
+    parser = argparse.ArgumentParser(prog="audit_tooling", description="Audit tooling and CI presence.")
     parser.add_argument("--target-root", type=Path, default=Path("."), help="Path to target repo root")
     parser.add_argument("--json", action="store_true", help="Emit JSON instead of human-readable output")
     parser.add_argument("--report", type=Path, help="Where to write the audit report (JSON)")
@@ -251,6 +265,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """CLI entry point. Returns a process exit code."""
     args = parse_args(argv)
     target_root = args.target_root.resolve()
 

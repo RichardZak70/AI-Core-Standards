@@ -24,19 +24,36 @@ jobs:
       - name: Run markdownlint
         run: npm run lint:md
 
+      - name: Run eslint (JSDoc)
+        run: npm run -s lint:js
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Install yamllint
-        run: python -m pip install --upgrade pip yamllint pre-commit ruff mypy pytest
+      - name: Install Python dependencies (pinned)
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
 
       - name: Run yamllint
         run: python -m yamllint .
 
       - name: Run ruff
         run: python -m ruff check scripts tests
+
+      - name: Run darglint (docstring structure)
+        run: |
+          python -m pip show darglint
+          darglint -s google -z short --ignore-regex '^_' scripts
+
+      - name: Run interrogate (doc coverage)
+        run: |
+          interrogate --style google --fail-under 80 --ignore-private --ignore-semiprivate --ignore-module --exclude tests scripts
+
+      - name: Run Vale (prose lint)
+        run: python scripts/run_vale.py
 
       - name: Run mypy
         run: python -m mypy --config-file mypy.ini scripts

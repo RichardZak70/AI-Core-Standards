@@ -73,7 +73,8 @@ def test_unlinked_required_docs_fail(tmp_path: Path) -> None:
 
 
 def test_recommended_missing_only_warns(tmp_path: Path) -> None:
-    """
+    """Recommended docs missing should not break compliance.
+
     If all required docs exist and are linked, but recommended docs are missing,
     the project should still be compliant.
     """

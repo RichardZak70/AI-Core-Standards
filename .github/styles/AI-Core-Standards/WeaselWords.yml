@@ -1,0 +1,15 @@
+extends: existence
+message: "Avoid weasel word '%s' — be specific."
+level: error
+ignorecase: true
+
+# These words tend to hide uncertainty or restate code.
+# Prefer concrete invariants, constraints, units, or rationale.
+tokens:
+  - obviously
+  - simply
+  - just
+  - easy
+  - clearly
+  - trivial
+  - straightforward

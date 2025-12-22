@@ -42,7 +42,8 @@ def test_compliant_when_required_and_recommended_present(tmp_path: Path) -> None
 
 
 def test_missing_required_fails_for_python_repo(tmp_path: Path) -> None:
-    """
+    """Python code should trigger Python-specific tooling requirements.
+
     Presence of Python code should trigger Python-specific requirements
     (.pre-commit-config.yaml, pyproject.toml, CI sentinel, etc).
     """
@@ -57,10 +58,7 @@ def test_missing_required_fails_for_python_repo(tmp_path: Path) -> None:
 
 
 def test_recommended_missing_warns_only_when_no_language(tmp_path: Path) -> None:
-    """
-    If there are no language-specific source files, recommended items are listed
-    but do not break compliance when required core tooling is present.
-    """
+    """Recommended items are warn-only when no language is detected."""
     for rel in REQUIRED_FILES:
         _touch(tmp_path / rel)
 
@@ -103,10 +101,7 @@ def test_human_output_includes_missing(tmp_path: Path, capsys: pytest.CaptureFix
 
 
 def test_ci_workflow_any_file_satisfies(tmp_path: Path) -> None:
-    """
-    Any workflow file under .github/workflows/ should satisfy the CI sentinel,
-    even if its name is not exactly ci.yml.
-    """
+    """Any workflow under .github/workflows/ should satisfy the CI sentinel."""
     _touch(tmp_path / ".pre-commit-config.yaml")
     _touch(tmp_path / "pyproject.toml")
     _touch(tmp_path / ".github" / "workflows" / "alt.yaml")
@@ -133,9 +128,7 @@ def test_ruff_alternative_config(tmp_path: Path) -> None:
 
 
 def test_js_requires_package_json(tmp_path: Path) -> None:
-    """
-    JS project: .js should require package.json, but not pyproject.toml when no Python.
-    """
+    """JS code should require package.json but not pyproject.toml."""
     _touch(tmp_path / "src" / "index.js")
     _touch(tmp_path / CI_SENTINEL)
     _touch(tmp_path / ".pre-commit-config.yaml")
@@ -147,9 +140,7 @@ def test_js_requires_package_json(tmp_path: Path) -> None:
 
 
 def test_ts_requires_tsconfig_and_package_json(tmp_path: Path) -> None:
-    """
-    TS project: .ts should require both package.json and tsconfig.json.
-    """
+    """TypeScript code should require package.json and tsconfig.json."""
     _touch(tmp_path / "src" / "app.ts")
     _touch(tmp_path / CI_SENTINEL)
     _touch(tmp_path / ".pre-commit-config.yaml")
@@ -162,9 +153,7 @@ def test_ts_requires_tsconfig_and_package_json(tmp_path: Path) -> None:
 
 
 def test_c_cpp_requires_build_system(tmp_path: Path) -> None:
-    """
-    C/C++ project: .c should require a build system file (CMakeLists.txt or Makefile) but not pyproject.toml.
-    """
+    """C/C++ code should require a build system file but not pyproject.toml."""
     _touch(tmp_path / "src" / "main.c")
     _touch(tmp_path / CI_SENTINEL)
     _touch(tmp_path / ".pre-commit-config.yaml")
@@ -176,9 +165,7 @@ def test_c_cpp_requires_build_system(tmp_path: Path) -> None:
 
 
 def test_mixed_python_and_js_requires_union(tmp_path: Path) -> None:
-    """
-    Mixed project (Python + JS) should require both pyproject.toml and package.json.
-    """
+    """Mixed Python+JS repo should require both pyproject.toml and package.json."""
     _touch(tmp_path / "src" / "app.py")
     _touch(tmp_path / "web" / "index.js")
     _touch(tmp_path / CI_SENTINEL)
@@ -191,9 +178,7 @@ def test_mixed_python_and_js_requires_union(tmp_path: Path) -> None:
 
 
 def test_mixed_python_and_c_requires_union(tmp_path: Path) -> None:
-    """
-    Mixed project (Python + C/C++) should require both pyproject.toml and a C/C++ build file.
-    """
+    """Mixed Python+C/C++ repo should require pyproject.toml and a build file."""
     _touch(tmp_path / "src" / "app.py")
     _touch(tmp_path / "native" / "main.c")
     _touch(tmp_path / CI_SENTINEL)

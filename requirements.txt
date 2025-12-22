@@ -1,0 +1,6 @@
+# Runtime dependencies for scripts in this repo.
+# Pinned for deterministic CI.
+
+PyYAML==6.0.3
+jsonschema==4.25.1
+pydantic==2.12.5

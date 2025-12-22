@@ -19,6 +19,8 @@ from typing import cast
 
 @dataclass
 class MergeReport:
+    """Result of merging prompt maps, including override provenance."""
+
     merged: Dict[str, Any]
     source_by_key: Dict[str, str]
     overrides: Dict[str, list[str]]  # key -> list of sources seen in order
@@ -52,6 +54,7 @@ def _load_yaml(path: Path, required: bool = False, label: str | None = None) -> 
 
 
 def merge_prompts(core: Dict[str, Any], template: Dict[str, Any], project: Dict[str, Any]) -> MergeReport:
+    """Merge prompts with precedence project > template > core."""
     merged: Dict[str, Any] = {}
     source_by_key: Dict[str, str] = {}
     overrides: Dict[str, list[str]] = {}
@@ -70,12 +73,17 @@ def merge_prompts(core: Dict[str, Any], template: Dict[str, Any], project: Dict[
 
 
 def write_yaml(data: Dict[str, Any], path: Path) -> None:
+    """Write YAML to *path*, creating parent directories as needed."""
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(yaml.safe_dump(data, sort_keys=True), encoding="utf-8")
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Merge prompts with project > template > core precedence.")
+    """Parse CLI arguments for prompt merging."""
+    parser = argparse.ArgumentParser(
+        prog="prompt_merge",
+        description="Merge prompts with project > template > core precedence.",
+    )
     parser.add_argument("--core", type=Path, default=Path("config/prompts.core.yaml"), help="Path to core prompts.yaml (required)")
     parser.add_argument("--template", type=Path, default=Path("config/prompts.defaults.yaml"), help="Path to template prompts.defaults.yaml (optional)")
     parser.add_argument("--project", type=Path, default=Path("config/prompts.custom.yaml"), help="Path to project prompts.custom.yaml (optional)")
@@ -86,6 +94,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def _print_overrides(overrides: Dict[str, list[str]]) -> None:
+    """Print overrides to stderr in a human-readable form."""
     if not overrides:
         return
     print("Overrides detected (later source overrides earlier):", file=sys.stderr)
@@ -96,6 +105,7 @@ def _print_overrides(overrides: Dict[str, list[str]]) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """CLI entry point. Returns a process exit code."""
     args = parse_args(argv)
 
     try:

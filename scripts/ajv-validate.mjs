@@ -39,7 +39,14 @@ const ajv = new Ajv2020({
 });
 addFormats(ajv);
 
-async function validateConfig({ label, schema, data }) {
+/**
+ * Validate a single YAML config file against its JSON schema.
+ *
+ * @param {{ label: string, schema: string, data: string }} fileDef - Definition of the schema+data pair.
+ * @returns {Promise<boolean>} True when the config validates.
+ */
+async function validateConfig(fileDef) {
+  const { label, schema, data } = fileDef;
   const schemaPath = path.join(repoRoot, schema);
   const dataPath = path.join(repoRoot, data);
 
@@ -86,6 +93,11 @@ async function validateConfig({ label, schema, data }) {
   return true;
 }
 
+/**
+ * Validate all configured files and exit non-zero on failure.
+ *
+ * @returns {Promise<void>} Resolves when validation is complete.
+ */
 async function main() {
   let hasErrors = false;
 
@@ -101,8 +113,10 @@ async function main() {
   }
 }
 
-main().catch((err) => {
+try {
+  await main();
+} catch (err) {
   console.error('💥 Unexpected error during schema validation:');
   console.error(err);
   process.exit(1);
-});
+}

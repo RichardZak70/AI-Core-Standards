@@ -116,7 +116,7 @@ def test_respects_max_size_bytes(tmp_path: Path) -> None:
     big_file.write_bytes(b"#" * (2_000_000))
     _write(tmp_path / "src" / "small.py", "openai.ChatCompletion.create()")
 
-    result = audit(tmp_path, max_size_bytes=1_000_000)  # type: ignore[arg-type]
+    result = audit(tmp_path, max_size_bytes=1_000_000)
 
     assert any("small.py" in f.path for f in result.findings)
     assert not any("big.py" in f.path for f in result.findings)

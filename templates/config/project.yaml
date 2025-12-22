@@ -1,0 +1,29 @@
+# Project Configuration
+# This file describes project metadata per the AI-Core-Standards.
+
+name: "my-ai-project"
+description: "Example AI project following AI-Core-Standards"
+
+owner: "Your Team"
+
+languages:
+  - python
+
+runtime: service
+
+stack:
+  - fastapi
+  - postgresql
+
+data_policy:
+  pii: false
+  prod_data: false
+  data_classification: internal
+  retention_days: 90
+
+repository:
+  url: "https://github.com/yourorg/my-ai-project"
+  branch: main
+
+version: "0.1.0"
+status: active

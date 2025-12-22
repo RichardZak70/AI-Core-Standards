@@ -124,8 +124,12 @@ def test_yaml_output(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None
     _write(tmp_path / "p.py", "PROMPT = 'hi there'")
 
     # Invoke via function path to produce YAML skeleton
-    sys.argv = []  # ensure argparse doesn't see pytest args
-    result = extract_prompts(tmp_path, min_length=0)
+    original_argv = sys.argv[:]
+    try:
+        sys.argv = ["prompt_extract"]  # ensure argparse doesn't see pytest args
+        result = extract_prompts(tmp_path, min_length=0)
+    finally:
+        sys.argv = original_argv
 
     # Build YAML content similar to main's --yaml path
     yaml_lines = ["prompts:"]

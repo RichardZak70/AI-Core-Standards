@@ -7,7 +7,11 @@ import argparse
 import json
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Iterable
+from functools import lru_cache
+from typing import Iterable, Mapping, Any, List, cast
+from datetime import datetime
+
+from jsonschema import Draft202012Validator, FormatChecker
 
 
 REQUIRED_DIRS: list[str] = [
@@ -29,10 +33,13 @@ ALLOWED_TOP_LEVEL_IN_DATA: set[str] = {
 ALLOWED_TOP_LEVEL_FILES_IN_DATA: set[str] = {".gitkeep", ".gitignore", "README.md"}
 
 OUTPUT_METADATA_KEYS: list[str] = ["run_id", "model", "prompt_id", "timestamp"]
+OUTPUT_SCHEMA_PATH: Path = Path(__file__).resolve().parent.parent / "schemas" / "outputs_metadata.schema.json"
 
 
 @dataclass
 class DataAuditResult:
+    """Result of checking data/ layout and output metadata traceability."""
+
     target: str
     missing_dirs: list[str]
     stray_items: list[str]
@@ -40,9 +47,11 @@ class DataAuditResult:
 
     @property
     def is_compliant(self) -> bool:
+        """Return True if required dirs exist and no issues were found."""
         return not self.missing_dirs and not self.stray_items and not self.metadata_issues
 
     def to_json(self) -> dict[str, object]:
+        """Return a JSON-serializable representation of this result."""
         payload = asdict(self)
         payload["is_compliant"] = self.is_compliant
         return payload
@@ -76,16 +85,37 @@ def _find_stray_items(data_root: Path) -> list[str]:
     return stray
 
 
-def _check_output_metadata(outputs_root: Path, max_files: int | None = None) -> list[str]:
-    """Check JSON files under data/outputs for required metadata keys.
+@lru_cache(maxsize=4)
+def _load_output_schema(schema_path: Path) -> Mapping[str, object] | None:
+    try:
+        data = json.loads(schema_path.read_text(encoding="utf-8"))
+    except OSError:
+        return None
+    if isinstance(data, Mapping):
+        return cast(Mapping[str, object], data)
+    return None
 
-    max_files: if provided, only scan up to this many files to avoid huge runs.
-    """
-    issues: list[str] = []
+
+def _jsonschema_errors(schema: Mapping[str, object], data: Mapping[str, object]) -> List[str]:
+    validator = Draft202012Validator(schema, format_checker=FormatChecker())
+    data_obj: Any = data
+    validator_any: Any = validator
+    return [error.message for error in validator_any.iter_errors(data_obj)]
+
+
+def _check_output_metadata(
+    outputs_root: Path,
+    max_files: int | None = None,
+    schema_path: Path | None = None,
+) -> List[str]:
+    """Check JSON files under data/outputs for required metadata keys and schema compliance."""
     if not outputs_root.exists():
-        return issues
+        return []
 
+    issues: list[str] = []
+    schema = _load_output_schema(schema_path) if schema_path else None
     count = 0
+
     for path in outputs_root.rglob("*.json"):
         if max_files is not None and count >= max_files:
             issues.append(
@@ -95,29 +125,75 @@ def _check_output_metadata(outputs_root: Path, max_files: int | None = None) -> 
             break
 
         count += 1
-        try:
-            data = json.loads(path.read_text(encoding="utf-8"))
-        except Exception as exc:  # noqa: BLE001
-            issues.append(f"{path}: failed to parse JSON ({exc})")
-            continue
-
-        if not isinstance(data, dict):
-            issues.append(f"{path}: expected top-level JSON object with metadata")
-            continue
-
-        missing = [key for key in OUTPUT_METADATA_KEYS if key not in data]
-        if missing:
-            issues.append(f"{path}: missing metadata keys: {', '.join(missing)}")
+        issues.extend(_validate_output_file(path, schema))
 
     return issues
 
 
-def audit(target_root: Path, max_output_files: int | None = None) -> DataAuditResult:
+def _validate_output_file(path: Path, schema: Mapping[str, Any] | None) -> List[str]:
+    file_issues: list[str] = []
+
+    data_obj, parse_error = _read_json(path)
+    if parse_error:
+        file_issues.append(parse_error)
+        return file_issues
+
+    object_error = _ensure_mapping(path, data_obj)
+    if object_error:
+        file_issues.append(object_error)
+        return file_issues
+
+    data_map = cast(Mapping[str, Any], data_obj)
+
+    if schema:
+        schema_errors = _jsonschema_errors(schema, data_map)
+        if schema_errors:
+            file_issues.append(f"{path}: schema validation failed: {', '.join(schema_errors)}")
+            return file_issues
+
+    if "timestamp" in data_map:
+        ts_value = data_map["timestamp"]
+        try:
+            # Accept trailing Z by normalizing to +00:00 for fromisoformat
+            ts_normalized = ts_value.replace("Z", "+00:00") if isinstance(ts_value, str) else str(ts_value)
+            datetime.fromisoformat(ts_normalized)
+        except Exception as exc:  # noqa: BLE001
+            file_issues.append(f"{path}: invalid timestamp format: {exc}")
+            return file_issues
+
+    missing = [key for key in OUTPUT_METADATA_KEYS if key not in data_map]
+    if missing:
+        file_issues.append(f"{path}: missing metadata keys: {', '.join(missing)}")
+
+    return file_issues
+
+
+def _read_json(path: Path) -> tuple[Mapping[str, Any] | object | None, str | None]:
+    try:
+        return json.loads(path.read_text(encoding="utf-8")), None
+    except Exception as exc:  # noqa: BLE001
+        return None, f"{path}: failed to parse JSON ({exc})"
+
+
+def _ensure_mapping(path: Path, data: object) -> str | None:
+    if not isinstance(data, dict):
+        return f"{path}: expected top-level JSON object with metadata"
+    return None
+
+
+def audit(
+    target_root: Path,
+    max_output_files: int | None = None,
+    metadata_schema: Path | None = None,
+) -> DataAuditResult:
+    """Audit *target_root* for expected data folders and output metadata."""
     missing_dirs = _find_missing(target_root, REQUIRED_DIRS)
     stray_items = _find_stray_items(target_root / "data")
+    schema_path = metadata_schema or OUTPUT_SCHEMA_PATH
     metadata_issues = _check_output_metadata(
         target_root / "data" / "outputs",
         max_files=max_output_files,
+        schema_path=schema_path,
     )
     return DataAuditResult(
         target=str(target_root),
@@ -128,6 +204,7 @@ def audit(target_root: Path, max_output_files: int | None = None) -> DataAuditRe
 
 
 def print_human(result: DataAuditResult) -> None:
+    """Print a human-readable data layout audit report."""
     print(f"Auditing data layout in: {result.target}\n")
 
     if result.missing_dirs:
@@ -155,7 +232,8 @@ def print_human(result: DataAuditResult) -> None:
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Audit data layout and traceability.")
+    """Parse CLI arguments for the data layout audit."""
+    parser = argparse.ArgumentParser(prog="audit_data_layout", description="Audit data layout and traceability.")
     parser.add_argument(
         "--target-root",
         type=Path,
@@ -178,14 +256,25 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=None,
         help="Max number of JSON files under data/outputs to scan (for huge repos)",
     )
+    parser.add_argument(
+        "--metadata-schema",
+        type=Path,
+        default=None,
+        help="Path to outputs metadata JSON schema (default: schemas/outputs_metadata.schema.json)",
+    )
     return parser.parse_args(argv)
 
 
 def main(argv: list[str] | None = None) -> int:
+    """CLI entry point. Returns a process exit code."""
     args = parse_args(argv)
     target_root = args.target_root.resolve()
 
-    result = audit(target_root, max_output_files=args.max_output_files)
+    result = audit(
+        target_root,
+        max_output_files=args.max_output_files,
+        metadata_schema=args.metadata_schema,
+    )
     json_payload = json.dumps(result.to_json(), indent=2)
 
     if args.json:

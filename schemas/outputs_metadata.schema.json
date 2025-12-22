@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rz-core/schemas/outputs_metadata.schema.json",
+  "title": "LLM Run Output Metadata",
+  "description": "Metadata for a single LLM run stored under data/outputs/.",
+  "type": "object",
+  "required": ["run_id", "model", "prompt_id", "timestamp", "status"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "description": "Version of this metadata schema. Example: '1.0.0'.",
+      "minLength": 1,
+      "default": "1.0.0"
+    },
+    "run_id": {
+      "type": "string",
+      "description": "Unique identifier for this run within the project (UUID, ULID, or similar).",
+      "minLength": 1
+    },
+    "model": {
+      "type": "string",
+      "description": "Logical model identifier, ideally matching config/models.yaml.",
+      "minLength": 1
+    },
+    "prompt_id": {
+      "type": "string",
+      "description": "Logical prompt identifier, matching config/prompts.yaml.",
+      "minLength": 1
+    },
+    "timestamp": {
+      "type": "string",
+      "description": "RFC 3339 timestamp when the run was executed.",
+      "format": "date-time"
+    },
+    "status": {
+      "type": "string",
+      "description": "Outcome of the run.",
+      "enum": ["success", "error", "skipped"]
+    },
+
+    "tags": {
+      "type": "array",
+      "description": "Free-form tags for grouping/searching runs (e.g. 'eval', 'ab-test').",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "input_hash": {
+      "type": "string",
+      "description": "Stable hash of the normalized input payload used for caching/dedup.",
+      "minLength": 1
+    },
+
+    "duration_ms": {
+      "type": "number",
+      "description": "End-to-end runtime of the call in milliseconds.",
+      "minimum": 0
+    },
+
+    "input_tokens": {
+      "type": "integer",
+      "description": "Number of tokens in the prompt input.",
+      "minimum": 0
+    },
+    "output_tokens": {
+      "type": "integer",
+      "description": "Number of tokens in the model output.",
+      "minimum": 0
+    },
+    "total_tokens": {
+      "type": "integer",
+      "description": "Total tokens billed for this call.",
+      "minimum": 0
+    },
+    "cost_usd": {
+      "type": "number",
+      "description": "Approximate cost of this run in USD.",
+      "minimum": 0
+    },
+
+    "metrics": {
+      "type": "object",
+      "description": "Optional evaluation metrics for this run (accuracy, BLEU, etc.).",
+      "additionalProperties": {
+        "type": ["number", "string", "boolean", "null"]
+      }
+    },
+
+    "error_type": {
+      "type": "string",
+      "description": "Short machine-readable error category if status != 'success'.",
+      "minLength": 1
+    },
+    "error_message": {
+      "type": "string",
+      "description": "Human-readable error message if status != 'success'.",
+      "minLength": 1
+    }
+  },
+  "additionalProperties": true
+}

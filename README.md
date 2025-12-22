@@ -26,4 +26,18 @@ This repository centralizes the conventions, templates, and tooling that govern 
    - `python scripts/fix_audit_findings.py --run --fail-on-missing` to orchestrate available audits in sequence.
 5. For existing projects, add both the standards repo and the target repo to a multi-root workspace so Copilot can cross-reference standards when fixing findings.
 
+## Quality Gates
+
+The same checks run locally (pre-commit) and in CI:
+
+- Python docstrings: `ruff` (PEP 257) + `interrogate` (coverage)
+- Prose linting: `vale` (README.md + docs/)
+- JS doc comments: `eslint` + `eslint-plugin-jsdoc` (scripts/**/*.mjs)
+
+Run locally:
+
+- Python deps: `python -m pip install -r requirements-dev.txt`
+- Node deps: `npm ci`
+- Everything: `pre-commit run --all-files`
+
 > Treat this repository as a living artifact. Submit pull requests for any net-new rules, keeping the documentation, templates, and automation in sync.

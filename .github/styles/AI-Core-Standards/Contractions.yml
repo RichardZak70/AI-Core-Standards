@@ -1,0 +1,18 @@
+extends: existence
+message: "Avoid contraction '%s' in standards docs; use the expanded form."
+level: error
+ignorecase: true
+
+# Standards docs should be unambiguous; prefer expanded forms.
+tokens:
+  - can't
+  - won't
+  - don't
+  - shouldn't
+  - isn't
+  - aren't
+  - wasn't
+  - weren't
+  - it's
+  - that's
+  - there's

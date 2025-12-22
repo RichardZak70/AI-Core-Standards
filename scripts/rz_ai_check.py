@@ -16,24 +16,31 @@ from prompt_extract import extract_prompts
 
 @dataclass
 class CheckResult:
+    """Outcome of a single named check in the consolidated report."""
+
     name: str
     status: str  # "pass" | "fail"
     details: dict[str, Any]
 
     def to_json(self) -> dict[str, Any]:
+        """Return a JSON-serializable representation of this check."""
         return asdict(self)
 
 
 @dataclass
 class ConsolidatedReport:
+    """Aggregate report across multiple audits/checks for one target."""
+
     target: str
     checks: List[CheckResult]
 
     @property
     def passed(self) -> bool:
+        """Return True if all checks passed."""
         return all(check.status == "pass" for check in self.checks)
 
     def to_json(self) -> dict[str, Any]:
+        """Return a JSON-serializable representation of this report."""
         return {
             "target": self.target,
             "passed": self.passed,
@@ -42,6 +49,7 @@ class ConsolidatedReport:
 
 
 def run_checks(target_root: Path) -> ConsolidatedReport:
+    """Run the consolidated checks against *target_root*."""
     checks: list[CheckResult] = []
 
     tooling_result = audit_tooling(target_root)
@@ -78,6 +86,7 @@ def run_checks(target_root: Path) -> ConsolidatedReport:
 
 
 def print_human(report: ConsolidatedReport) -> None:
+    """Print a human-readable consolidated report."""
     print(f"Running AI-Core consolidated checks for: {report.target}\n")
     for check in report.checks:
         mark = "✅" if check.status == "pass" else "❌"
@@ -87,7 +96,11 @@ def print_human(report: ConsolidatedReport) -> None:
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Run consolidated AI-Core-Standards health check.")
+    """Parse CLI arguments for the consolidated check runner."""
+    parser = argparse.ArgumentParser(
+        prog="rz_ai_check",
+        description="Run consolidated AI-Core-Standards health check.",
+    )
     parser.add_argument("--target-root", type=Path, default=Path("."), help="Path to target repo root")
     parser.add_argument("--json", action="store_true", help="Emit JSON instead of human-readable output")
     parser.add_argument("--report", type=Path, help="Where to write the consolidated report (JSON)")
@@ -95,6 +108,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """CLI entry point. Returns a process exit code."""
     args = parse_args(argv)
     target_root = args.target_root.resolve()
 

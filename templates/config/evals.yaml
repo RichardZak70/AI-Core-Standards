@@ -1,0 +1,46 @@
+version: "1.0.0"
+
+evals:
+  - id: classification_accuracy
+    description: "Test classification prompt accuracy"
+    dataset:
+      data_path: "data/processed/test_set.jsonl"
+      split: "test"
+      max_samples: 100
+      seed: 42
+    prompt_id: "classify_intent"
+    models:
+      - "gpt-4"
+      - "claude-3-opus"
+    metrics:
+      - exact_match
+      - rouge_l
+    thresholds:
+      exact_match: 0.85
+      rouge_l: 0.75
+    batch_size: 8
+    parallelism: 2
+    tags:
+      - classification
+      - production
+
+  - id: summarization_quality
+    description: "Evaluate summarization prompt quality"
+    dataset:
+      dataset_id: "news_articles_v1"
+      split: "dev"
+    prompt_id:
+      - "summarize_article"
+      - "summarize_bullet_points"
+    models:
+      - "gpt-4-turbo"
+    metrics:
+      - rouge_1
+      - rouge_2
+      - rouge_l
+      - semantic_similarity
+    thresholds:
+      rouge_l: 0.6
+    batch_size: 4
+    tags:
+      - summarization

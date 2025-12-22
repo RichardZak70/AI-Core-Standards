@@ -175,7 +175,6 @@ def test_dry_run_does_not_write(tmp_path: Path, capsys: pytest.CaptureFixture[st
 
 def test_show_overrides_silent_when_no_overrides(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
 	"""If there are no overlapping keys, --show-overrides should not print an overrides block."""
-
 	core = tmp_path / "core.yaml"
 	template = tmp_path / "template.yaml"
 	project = tmp_path / "project.yaml"

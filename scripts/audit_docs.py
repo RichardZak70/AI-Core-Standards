@@ -27,6 +27,8 @@ RECOMMENDED_DOCS: list[str] = [
 
 @dataclass
 class DocsAuditResult:
+    """Result of checking docs existence and README linkage."""
+
     target: str
     missing_required: list[str]
     missing_recommended: list[str]
@@ -35,6 +37,7 @@ class DocsAuditResult:
 
     @property
     def is_compliant(self) -> bool:
+        """Return True if required docs exist and are linked from README.md."""
         return (
             not self.missing_required
             and not self.readme_missing
@@ -42,6 +45,7 @@ class DocsAuditResult:
         )
 
     def to_json(self) -> dict[str, object]:
+        """Return a JSON-serializable representation of this result."""
         payload = asdict(self)
         payload["is_compliant"] = self.is_compliant
         return payload
@@ -82,6 +86,7 @@ def _find_unlinked(existing_required: Iterable[str], readme_text: str | None) ->
 
 
 def audit(target_root: Path) -> DocsAuditResult:
+    """Audit *target_root* for required docs and README linkage."""
     missing_required = _find_missing(target_root, REQUIRED_DOCS)
     missing_recommended = _find_missing(target_root, RECOMMENDED_DOCS)
     readme_text = _load_readme(target_root)
@@ -99,6 +104,7 @@ def audit(target_root: Path) -> DocsAuditResult:
 
 
 def print_human(result: DocsAuditResult) -> None:
+    """Print a human-readable documentation audit report."""
     print(f"Auditing docs in: {result.target}\n")
 
     if result.readme_missing:
@@ -129,7 +135,8 @@ def print_human(result: DocsAuditResult) -> None:
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Audit documentation against standards.")
+    """Parse CLI arguments for the docs audit."""
+    parser = argparse.ArgumentParser(prog="audit_docs", description="Audit documentation against standards.")
     parser.add_argument("--target-root", type=Path, default=Path("."), help="Path to target repo root")
     parser.add_argument("--json", action="store_true", help="Emit JSON instead of human-readable output")
     parser.add_argument("--report", type=Path, help="Where to write the audit report (JSON)")
@@ -137,6 +144,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """CLI entry point. Returns a process exit code."""
     args = parse_args(argv)
     target_root = args.target_root.resolve()
 

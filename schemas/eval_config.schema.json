@@ -1,0 +1,142 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rz-core/schemas/eval_config.schema.json",
+  "title": "Evaluation Configuration",
+  "description": "Configuration for LLM evaluations (datasets, prompts, models, metrics).",
+  "type": "object",
+  "required": ["evals"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Version of the eval config schema or config file (e.g. '1.0.0').",
+      "minLength": 1
+    },
+    "evals": {
+      "type": "array",
+      "description": "List of evaluation definitions.",
+      "items": {
+        "type": "object",
+        "required": ["id", "description", "dataset", "prompt_id", "models"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for this evaluation.",
+            "minLength": 1
+          },
+          "description": {
+            "type": "string",
+            "description": "Human-readable description of what this eval checks.",
+            "minLength": 1
+          },
+          "dataset": {
+            "type": "object",
+            "description": "Dataset configuration for this eval. Must specify at least one of dataset_id or data_path.",
+            "properties": {
+              "dataset_id": {
+                "type": "string",
+                "description": "Logical dataset identifier (e.g. 'qa-dev-2025-01').",
+                "minLength": 1
+              },
+              "data_path": {
+                "type": "string",
+                "description": "Filesystem or URI path to the dataset (e.g. 'data/processed/qa/dev.csv').",
+                "minLength": 1
+              },
+              "split": {
+                "type": "string",
+                "description": "Optional dataset split name (e.g. 'train', 'val', 'test').",
+                "minLength": 1
+              },
+              "max_samples": {
+                "type": "integer",
+                "description": "Optional limit on number of samples to evaluate.",
+                "minimum": 1
+              },
+              "seed": {
+                "type": "integer",
+                "description": "Random seed used for sampling/shuffling.",
+                "minimum": 0
+              }
+            },
+            "additionalProperties": false,
+            "allOf": [
+              {
+                "anyOf": [
+                  { "required": ["dataset_id"] },
+                  { "required": ["data_path"] }
+                ]
+              }
+            ]
+          },
+          "prompt_id": {
+            "description": "Prompt identifier(s) to use for this evaluation.",
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 1,
+                "uniqueItems": true
+              }
+            ]
+          },
+          "models": {
+            "type": "array",
+            "description": "List of model IDs to evaluate (must match config/models.yaml).",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1,
+            "uniqueItems": true
+          },
+          "metrics": {
+            "type": "array",
+            "description": "List of metric identifiers to compute (e.g. 'exact_match', 'bleu', 'regex_match').",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1,
+            "uniqueItems": true
+          },
+          "thresholds": {
+            "type": "object",
+            "description": "Optional thresholds keyed by metric name (e.g. { 'exact_match': 0.8 }).",
+            "additionalProperties": {
+              "type": "number"
+            },
+            "minProperties": 1
+          },
+          "batch_size": {
+            "type": "integer",
+            "description": "Optional batch size for running this eval.",
+            "minimum": 1
+          },
+          "parallelism": {
+            "type": "integer",
+            "description": "Optional level of parallelism for this eval.",
+            "minimum": 1
+          },
+          "tags": {
+            "type": "array",
+            "description": "Free-form tags to classify this eval (e.g. 'smoke', 'regression', 'load-test').",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": false
+}

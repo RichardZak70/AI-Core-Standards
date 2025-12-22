@@ -31,6 +31,58 @@ repos:
         args:
           - --config-file=mypy.ini
           - scripts
+
+  # Docstring structure + signature alignment (Google style).
+  - repo: https://github.com/terrencepreilly/darglint
+    rev: v1.8.1
+    hooks:
+      - id: darglint
+        args:
+          - -s
+          - google
+          - -z
+          - short
+          - --ignore-regex
+          - '^_'
+        files: '^scripts/.*\\.py$'
+
+  # Doc coverage for public, non-obvious entry points.
+  - repo: https://github.com/econchick/interrogate
+    rev: 1.7.0
+    hooks:
+      - id: interrogate
+        args:
+          - --style
+          - google
+          - --fail-under
+          - '80'
+          - --ignore-private
+          - --ignore-semiprivate
+          - --ignore-module
+          - --exclude
+          - tests
+          - scripts
+
+  # Prose linting for docs (comments + docs) using a pinned Vale runner.
+  - repo: local
+    hooks:
+      - id: vale
+        name: vale
+        entry: .venv/Scripts/python scripts/run_vale.py
+        language: system
+        pass_filenames: false
+        files: '^(README\\.md|docs/.*\\.md)$'
+        stages: [commit]
+
+  # Enforce high-quality JSDoc blocks for our JS scripts.
+  - repo: local
+    hooks:
+      - id: eslint
+        name: eslint (scripts/*.mjs)
+        entry: npm run -s lint:js
+        language: system
+        pass_filenames: false
+        files: '^scripts/.*\\.mjs$'
   - repo: local
     hooks:
       - id: pytest
