@@ -70,22 +70,22 @@ Use this as a minimal, standards-aligned starting point for a new AI project. Th
 
 ```text
 <your-project>/
-	config/
-		evals.yaml
-		models.yaml
-		project.yaml
-		prompts.yaml
-	data/
-		raw/
-		interim/
-		processed/
-		external/
-		outputs/
-	docs/
-		README.md
-	src/
-		tools/
-	tests/
+  config/
+    evals.yaml
+    models.yaml
+    project.yaml
+    prompts.yaml
+  data/
+    raw/
+    interim/
+    processed/
+    external/
+    outputs/
+  docs/
+    README.md
+  src/
+    tools/
+  tests/
 ```
 
 ### 7.2 Create a new project from the templates

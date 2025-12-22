@@ -60,47 +60,47 @@ AI Core Standards is designed as a control plane, not a framework.
 
 ```text
 ┌──────────────────────────────────────────────┐
-│              AI CORE STANDARDS                │
-│  (Governance & Enforcement – This Repo)       │
+│              AI CORE STANDARDS               │
+│  (Governance & Enforcement – This Repo)      │
 │                                              │
 │  ┌───────────────┐   ┌────────────────────┐  │
-│  │ docs/         │   │ schemas/            │  │
-│  │ - rules       │   │ - prompts           │  │
-│  │ - structure   │   │ - models            │  │
-│  │ - reviews     │   │ - evals             │  │
-│  │               │   │ - outputs metadata  │  │
+│  │ docs/         │   │ schemas/           │  │
+│  │ - rules       │   │ - prompts          │  │
+│  │ - structure   │   │ - models           │  │
+│  │ - reviews     │   │ - evals            │  │
+│  │               │   │ - outputs metadata │  │
 │  └───────────────┘   └────────────────────┘  │
 │                                              │
 │  ┌────────────────────────────────────────┐  │
 │  │ scripts/                               │  │
-│  │ - audits (structure, data, docs, LLM) │  │
+│  │ - audits (structure, data, docs, LLM)  │  │
 │  │ - validators (AJV, Pydantic)           │  │
 │  │ - prompt extract / merge               │  │
 │  │ - consolidated checks                  │  │
 │  └────────────────────────────────────────┘  │
 └──────────────────────────────────────────────┘
-					▲
-					│ enforced by
-					│ audits + schemas
-					│
+                    ▲
+                    │ enforced by
+                    │ audits + schemas
+                    │
 ┌──────────────────────────────────────────────┐
-│              PROJECT TEMPLATES                │
-│        (Thin, Type-Specific Overlays)         │
+│              PROJECT TEMPLATES               │
+│        (Thin, Type-Specific Overlays)        │
 │                                              │
 │  python-cli | python-service | node-cli | …  │
 │                                              │
-│  - minimal skeleton                           │
+│  - minimal skeleton                          │
 │  - language/tooling defaults                 │
 │  - references core standards                 │
 └──────────────────────────────────────────────┘
-					▲
-					│ applied to
-					│
+                    ▲
+                    │ applied to
+                    │
 ┌──────────────────────────────────────────────┐
-│                AI PROJECTS                    │
-│        (Your Actual Repositories)             │
+│                AI PROJECTS                   │
+│        (Your Actual Repositories)            │
 │                                              │
-│  - business logic                             │
+│  - business logic                            │
 │  - models + prompts (config/)                │
 │  - data + outputs (data/)                    │
 │  - evaluations                               │
@@ -165,12 +165,12 @@ Usage terms for the entire standards set.
 ## Key Design Principles
 
 - Core Standards are immutable from the project’s point of view
-	- Projects conform to them; they do not fork them.
+  - Projects conform to them; they do not fork them.
 - Templates are thin
-	- They help you start, not redefine rules.
+  - They help you start, not redefine rules.
 - Audits are the source of truth
-	- “Looks fine” is irrelevant.
-	- If the audit fails, the project is non-compliant.
+  - “Looks fine” is irrelevant.
+  - If the audit fails, the project is non-compliant.
 
 ## Mental Model (Important)
 
